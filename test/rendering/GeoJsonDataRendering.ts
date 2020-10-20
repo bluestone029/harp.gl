@@ -71,7 +71,8 @@ describe("MapView + OmvDataSource + GeoJsonDataProvider rendering test", functio
             canvas,
             theme: options.theme,
             preserveDrawingBuffer: true,
-            pixelRatio: 1
+            pixelRatio: 1,
+            addBackgroundDatasource: false
         });
         mapView.animatedExtrusionHandler.enabled = false;
 
@@ -696,7 +697,7 @@ describe("MapView + OmvDataSource + GeoJsonDataProvider rendering test", functio
         });
 
         it(`wrapped polygon - merged`, async function() {
-            this.timeout(5000);
+            this.timeout(500000);
 
             await geoJsonTest({
                 lookAt,

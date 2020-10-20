@@ -141,6 +141,10 @@ export class MapObjectAdapter {
         );
     }
 
+    get level(): number {
+        return this.object.userData.tileKey?.level;
+    }
+
     private updateMaterials(context: MapAdapterUpdateEnv) {
         let somethingChanged: boolean = false;
         const materials = this.getObjectMaterials();
