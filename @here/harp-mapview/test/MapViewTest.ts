@@ -3,7 +3,6 @@
  * Licensed under Apache 2.0, see full license in LICENSE
  * SPDX-License-Identifier: Apache-2.0
  */
-
 import { Expr, getProjectionName } from "@here/harp-datasource-protocol";
 import {
     GeoBox,
@@ -34,6 +33,7 @@ import { CalculationStatus, ElevationRangeSource } from "../lib/ElevationRangeSo
 import { MapMaterialAdapter } from "../lib/MapMaterialAdapter";
 import { MapObjectAdapter } from "../lib/MapObjectAdapter";
 import { MapView, MapViewEventNames } from "../lib/MapView";
+import { DEFAULT_CLEAR_COLOR } from "../lib/MapViewEnvironment";
 import { MapViewFog } from "../lib/MapViewFog";
 import { MapViewUtils } from "../lib/Utils";
 import { VisibleTileSet } from "../lib/VisibleTileSet";
@@ -640,7 +640,7 @@ describe("MapView", function() {
         }
     });
 
-    it("Correctly sets event listeners and handlers webgl context restored", function() {
+    it("Correctly sets event listeners and handlers webgl context restored", async function() {
         mapView = new MapView({ canvas });
         const updateSpy = sinon.spy(mapView, "update");
 
@@ -655,34 +655,38 @@ describe("MapView", function() {
         const webGlContextLostHandler = addEventListenerSpy.getCall(0).args[1];
 
         const dispatchEventSpy = sinon.spy(mapView, "dispatchEvent");
-        // @ts-ignore: Conversion to Theme type
-        mapView.m_theme = {};
-        // @ts-ignore: Conversion to Number type
-        mapView.m_theme.clearColor = 0xffffff;
+        await mapView.setTheme({
+            clearColor: "#ffffff"
+        });
         webGlContextRestoredHandler();
-        // @ts-ignore: Conversion to undefined
-        mapView.m_theme.clearColor = undefined;
+
+        await mapView.setTheme({
+            clearColor: undefined
+        });
         webGlContextRestoredHandler();
         webGlContextLostHandler();
 
-        expect(clearColorStub.callCount).to.be.equal(3);
-        expect(clearColorStub.getCall(0).calledWith(0xefe9e1)).to.be.equal(true);
-        expect(clearColorStub.getCall(1).args[0].r).to.be.equal(1);
-        expect(clearColorStub.getCall(1).args[0].g).to.be.equal(1);
-        expect(clearColorStub.getCall(1).args[0].b).to.be.equal(1);
-        expect(clearColorStub.getCall(2).calledWith(0xefe9e1)).to.be.equal(true);
+        expect(clearColorStub.callCount).to.be.equal(5);
+        expect(clearColorStub.getCall(0).calledWith(DEFAULT_CLEAR_COLOR)).to.be.equal(true);
+        expect(clearColorStub.getCall(2).args[0].r).to.be.equal(1);
+        expect(clearColorStub.getCall(2).args[0].g).to.be.equal(1);
+        expect(clearColorStub.getCall(2).args[0].b).to.be.equal(1);
+        expect(clearColorStub.getCall(4).calledWith(DEFAULT_CLEAR_COLOR)).to.be.equal(true);
 
-        expect(updateSpy.callCount).to.be.equal(2);
-        expect(dispatchEventSpy.callCount).to.be.equal(5);
-        expect(dispatchEventSpy.getCall(0).args[0].type).to.be.equal(
+        expect(updateSpy.callCount).to.be.equal(5);
+        expect(dispatchEventSpy.callCount).to.be.equal(12);
+        expect(dispatchEventSpy.getCall(6).args[0].type).to.be.equal(
             MapViewEventNames.ContextRestored
         );
-        expect(dispatchEventSpy.getCall(1).args[0].type).to.be.equal(MapViewEventNames.Update);
-        expect(dispatchEventSpy.getCall(2).args[0].type).to.be.equal(
+        expect(dispatchEventSpy.getCall(7).args[0].type).to.be.equal(MapViewEventNames.Update);
+        expect(dispatchEventSpy.getCall(8).args[0].type).to.be.equal(MapViewEventNames.ThemeLoaded);
+        expect(dispatchEventSpy.getCall(9).args[0].type).to.be.equal(MapViewEventNames.Update);
+        expect(dispatchEventSpy.getCall(10).args[0].type).to.be.equal(
             MapViewEventNames.ContextRestored
         );
-        expect(dispatchEventSpy.getCall(3).args[0].type).to.be.equal(MapViewEventNames.Update);
-        expect(dispatchEventSpy.getCall(4).args[0].type).to.be.equal(MapViewEventNames.ContextLost);
+        expect(dispatchEventSpy.getCall(11).args[0].type).to.be.equal(
+            MapViewEventNames.ContextLost
+        );
     });
 
     it("Correctly sets and removes all event listeners by API", function() {
@@ -1665,9 +1669,11 @@ describe("MapView", function() {
                 canvas,
                 theme: relativeToAppUrl
             });
+
             await waitForEvent(mapView, MapViewEventNames.ThemeLoaded);
 
-            expect(mapView.theme.styles).to.not.be.empty;
+            const theme = await mapView.getTheme();
+            expect(theme.styles).to.not.be.empty;
         });
 
         it("allows to reset theme", async function() {
@@ -1679,7 +1685,7 @@ describe("MapView", function() {
             });
             await waitForEvent(mapView, MapViewEventNames.ThemeLoaded);
 
-            expect(mapView.theme).to.not.deep.equal({
+            expect(await mapView.getTheme()).to.not.deep.equal({
                 clearColor: undefined,
                 defaultTextStyle: undefined,
                 definitions: undefined,
@@ -1694,8 +1700,8 @@ describe("MapView", function() {
                 textStyles: undefined
             });
 
-            mapView.theme = {};
-            expect(mapView.theme).to.deep.equal({
+            await mapView.setTheme({});
+            expect(await mapView.getTheme()).to.deep.equal({
                 clearAlpha: undefined,
                 clearColor: undefined,
                 defaultTextStyle: undefined,

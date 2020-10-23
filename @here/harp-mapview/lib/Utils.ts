@@ -994,6 +994,14 @@ export namespace MapViewUtils {
     }
 
     /**
+     * Transfer from view space to camera space.
+     * @param viewPos - position in view space, result is stored here.
+     */
+    export function viewToLightSpace(viewPos: THREE.Vector3, camera: THREE.Camera): THREE.Vector3 {
+        return viewPos.applyMatrix4(camera.matrixWorldInverse);
+    }
+
+    /**
      * @hidden
      * @internal
      *
